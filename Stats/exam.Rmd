@@ -1,0 +1,132 @@
+---
+title: "Exam"
+author: "Sean Park"
+date: '2021 10 20 '
+output: word_document
+---
+
+```{r}
+library(MixAll)
+library(rtkore)
+library(AER)
+library(MASS)
+data("DebTrivedi")
+db = DebTrivedi
+```
+
+
+```{r}
+dbl = reshape(db, varying = c("ofp","ofnp","opp","opnp","emer","hosp"),
+               v.names="Visits",
+               timevar = "Type", times = c("ofp","ofnp","opp","opnp","emer","hosp"),
+               new.row.names = 1:30000,
+               direction = "long")
+```
+
+```{r}
+head(dbl)
+summary(dbl)
+```
+
+```{r}
+hist(dbl$faminc)
+dbl = dbl[dbl$faminc >= 0,]
+dbl = subset(dbl, select = -c(id))
+dbl$Type = factor(dbl$Type)
+dbl$Type = relevel(dbl$Type, ref = "ofp")
+dbl$health = relevel(dbl$health, ref = "average")
+```
+
+```{r}
+par(mfrow=c(2,2))
+hist(dbl$age)
+plot(dbl$health)
+plot(dbl$medicaid)
+plot(dbl$privins)
+```
+
+```{r}
+clog = function(x) log(x+0.5)
+par(mfrow=c(2,2))
+plot(clog(Visits) ~ health, data = dbl)
+plot(clog(Visits) ~ privins, data = dbl)
+plot(clog(Visits) ~ medicaid, data = dbl)
+plot(clog(Visits) ~ Type, data = dbl)
+```
+
+
+
+```{r}
+visit.glm = glm(Visits ~ ., family = poisson, data = dbl)
+summary(visit.glm)
+```
+```{r}
+visit.glm1 = glm(Visits ~ health + as.factor(numchron) + adldiff + region + age + faminc + black + gender + married + school + age + privins + medicaid + Type, data = dbl, family = poisson)
+summary(visit.glm1)
+```
+```{r}
+anova(visit.glm,visit.glm1)
+dispersiontest(visit.glm1, alternative = "two.sided")
+```
+```{r}
+plot(residuals(visit.glm1, "pearson") ~ fitted(visit.glm1))
+```
+```{r}
+visit.qp = glm(Visits ~ health + as.factor(numchron) + adldiff + region + age + faminc + black + gender + married + school + age + privins + medicaid + Type, data = dbl, family = quasipoisson)
+summary(visit.qp)
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(residuals(visit.qp, "pearson") ~ fitted(visit.qp))
+plot(residuals(visit.glm1, "pearson") ~ fitted(visit.glm1))
+```
+
+
+```{r}
+anova(visit.glm1,visit.qp)
+```
+
+
+
+```{r}
+visit.nbm = glm.nb(Visits ~ health + as.factor(numchron) + adldiff + region + age + faminc + black + gender + married + school + age + privins + medicaid + Type, data = dbl)
+summary(visit.nbm)
+```
+```{r}
+plot(residuals(visit.nbm, "pearson") ~ fitted(visit.nbm))
+```
+
+```{r}
+visit.nbm1 = glm.nb(Visits ~ health + as.factor(numchron) + adldiff + region + age + faminc + black + gender * married + school + privins + medicaid + Type, data = dbl)
+summary(visit.nbm1)
+```
+```{r}
+visit.nbm3 = glm.nb(Visits ~ health + as.factor(numchron) + adldiff + age + faminc*medicaid+ school + region + gender + black + married  + Type*privins, data = dbl)
+summary(visit.nbm3)
+```
+
+
+```{r}
+visit.nbm2 = glm.nb(Visits ~ health + as.factor(numchron) + adldiff + age + faminc + school + region + gender*black + married  + medicaid+ Type*privins, data = dbl)
+summary(visit.nbm2)
+```
+```{r}
+anova(visit.nbm,visit.nbm2)
+```
+```{r}
+stepAIC(visit.nbm2)
+```
+
+```{r}
+final.nbm = glm.nb(Visits ~ health + as.factor(numchron) + adldiff + age + school + region + gender*black + medicaid+ Type*privins, data = dbl)
+summary(final.nbm)
+```
+```{r}
+plot(residuals(final.nbm, "pearson") ~ fitted(final.nbm))
+```
+
+```{r}
+exp(coef(final.nbm))
+```
+
