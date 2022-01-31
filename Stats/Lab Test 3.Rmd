@@ -1,0 +1,57 @@
+---
+title: "Lab Test 3"
+author: "Sean Park"
+date: '2021 8 30 '
+output: word_document
+---
+
+
+a
+```{r}
+Poh = read.table("Poh1.txt", header = TRUE)
+```
+
+
+b
+```{r}
+Table = xtabs(Count~Group+Result, data = Poh)
+Table
+```
+ 
+c
+```{r}
+chisq = chisq.test(Table)
+chisq
+```
+Our null hypothesis would be H0 = The ratio of pass and fail would be same between NonSLT and SLT students.
+alternative would be H1 = The ratio of pass and fail would be different between NonSLT and SLT students.
+Since p.value is far less than 0.05, we reject our null hypothesis in 95% confidence level. Therefore, there is significant different in probability of passing unit between NonSLT and SLT students. Therefore, probability of passing for all levels of Group are not equal. (SLT = 0.827, NonSLT = 0.702).
+
+
+
+d
+```{r}
+obt.residuals = (chisq$observed-chisq$expected)/sqrt(chisq$expected)
+obt.residuals
+chisq$residuals
+```
+ 
+e  The table of residuals of our model shows that how observation was differ to the expectation. For example, students who attends SLT session and passes were 3.5 times more than expected and attending SLT session and failing had 5.4times less than expected. We knew that the data was not homogeneity but we did not know how to interpret data. Now we found out that attending SLT session will help to pass the unit.
+
+
+f Attending SLT sessions will help student to pass the unit.
+
+
+g
+```{r}
+fis = fisher.test(Table)
+fis
+```
+
+  h   Our null hypothesis would be H0 = The odds ratio of all levels of group are equal to 1.
+alternative would be H1 = The odds ratio of not all levels of group are equal to 1.
+Since p.value is far less than 0.05, we reject our null hypothesis in 95% confidence level. Therefore, some group has different odds compare to other groups. In this table NonSLT and Failing is first row and column, so NonSLT student odds of failing is greater than SLT student odds of failing. Therefore, odds ratio is 2.06 and it has interval (1.66,2.58) at 95% confidence level.
+
+
+  i  Not attending SLT session will increase change of failing the unit.
+

@@ -1,0 +1,123 @@
+---
+title: "Lab Test 6"
+author: "Sean Park"
+date: '2021 10 7 '
+output: word_document
+---
+
+```{r}
+library(MixAll)
+library(rtkore)
+library(MASS)
+data(DebTrivedi)
+Medi_data = DebTrivedi
+summary(Medi_data)
+```
+```{r}
+Medi_data = subset(Medi_data, select = -c(ofnp,opp,opnp,emer,hosp))
+summary(Medi_data)
+```
+```{r}
+mean(Medi_data$ofp)
+var(Medi_data$ofp)
+```
+
+```{r}
+plot(table(Medi_data$ofp))
+```
+
+```{r}
+par(mfcol=c(2,4))
+plot(ofp~health,data = Medi_data)
+plot(ofp~numchron,data = Medi_data)
+plot(ofp~adldiff,data = Medi_data)
+plot(ofp~region,data = Medi_data)
+plot(ofp~age,data = Medi_data)
+plot(ofp~black,data = Medi_data)
+plot(ofp~gender,data=Medi_data)
+plot(ofp~married, data=Medi_data)
+```
+```{r}
+par(mfcol=c(2,3))
+plot(ofp~school, data=Medi_data)
+plot(ofp~faminc,data = Medi_data)
+plot(ofp~employed,data = Medi_data)
+plot(ofp~privins,data = Medi_data)
+plot(ofp~medicaid,data = Medi_data)
+```
+
+```{r}
+Medi_data$numchron =factor(Medi_data$numchron)
+Medi_data$school = factor(Medi_data$school)
+glm_Medi_data = glm(ofp~., data=Medi_data,family = 'poisson')
+summary(glm_Medi_data)
+```
+
+```{r}
+glm_nb_Medi_data = glm.nb(ofp~.,data=Medi_data)
+summary(glm_nb_Medi_data)
+```
+
+```{r}
+nb_Medi_data_inter = glm.nb(ofp~(health+numchron+adldiff+privins+medicaid)^2+region+age+black+gender+married+school+faminc+employed, data=Medi_data)
+```
+```{r}
+stepAIC(nb_Medi_data_inter)
+```
+
+```{r}
+new_nb_mod = glm.nb(ofp ~ health + numchron + adldiff + privins + 
+    medicaid + region + age + black + gender + school + health:numchron + 
+    health:medicaid + privins:medicaid, data=Medi_data)
+summary(new_nb_mod)
+```
+```{r}
+Medi_data2 = DebTrivedi
+Medi_data2 = subset(Medi_data2, select = -c(ofnp,opp,opnp,emer,hosp))
+glm_nb_Medi_data2 = glm.nb(ofp~.,data=Medi_data2)
+new_nb_wout_numfac = glm.nb(ofp~(health+adldiff+privins+medicaid)^2+numchron+region+age+black+gender+married+school+faminc+employed,data=Medi_data2)
+stepAIC(new_nb_wout_numfac)
+```
+```{r}
+new_nb_wout_numfac_mod = glm.nb(ofp ~ health + adldiff + privins + medicaid + 
+    numchron + region + gender + school + health:adldiff + health:privins + 
+    health:medicaid + privins:medicaid, data=Medi_data2)
+summary(new_nb_wout_numfac_mod)
+```
+```{r}
+Medi_data3 = DebTrivedi
+Medi_data3 = subset(Medi_data3, select = -c(ofnp,opp,opnp,emer,hosp))
+Medi_data3$numchron = factor(Medi_data3$numchron)
+glm_nb_Medi_data3 = glm.nb(ofp~(health+adldiff+privins+numchron+medicaid)^2+region+age+black+gender+married+school+faminc+employed, data=Medi_data3)
+stepAIC(glm_nb_Medi_data3)
+```
+
+```{r}
+nb_with_onlychron = glm.nb(ofp ~ health + adldiff + privins + numchron + 
+    medicaid + region + gender + school + health:privins + health:medicaid + 
+    adldiff:numchron + privins:medicaid,data=Medi_data3)
+summary(nb_with_onlychron)
+```
+```{r}
+org_mod = glm(ofp~.,data=Medi_data,family = 'poisson')
+pchisq(2*(logLik(new_nb_wout_numfac_mod) - logLik(org_mod)),df=1,lower.tail = FALSE)
+```
+this chisq test shows that nb model is strongly suggested.
+
+```{r}
+summary(new_nb_wout_numfac_mod)
+```
+
+
+Here is 95% confidence interval.
+```{r}
+ci = cbind(Estimate=coef(new_nb_wout_numfac_mod), confint(new_nb_wout_numfac_mod))
+ci
+```
+```{r}
+exp(coef(new_nb_wout_numfac_mod))
+```
+```{r}
+plot(fitted(new_nb_wout_numfac_mod),residuals(new_nb_wout_numfac_mod,"pearson"))
+```
+

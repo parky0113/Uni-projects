@@ -1,0 +1,82 @@
+---
+title: "Lab Test 5"
+author: "Sean Park"
+date: '2021 9 26 '
+output: word_document
+---
+
+
+```{r}
+library(AER)
+library(pscl)
+Sdata = read.table("SnakesData(7).txt", header=TRUE)
+Sdata$VomitTotalCount = Sdata$VomitingCount0 + Sdata$VomitingCount2 + Sdata$VomitingCount4 + Sdata$VomitingCount6
+```
+
+
+```{r}
+hist(Sdata$VomitTotalCount)
+```
+
+```{r}
+Sdata.glm = glm(VomitTotalCount~ Age + Sex + Weight + Height + BMI + BMIPerc + 
+    PONVChild + PONVFamily + MotionSicknessChild + MotionSicknessF + 
+    Smoker + Morphine + SnakeConsumed1hr + Oxycodone, data=Sdata, family ="poisson"(link=log))
+summary(Sdata.glm)
+```
+```{r}
+pchisq(Sdata.glm$deviance, df=Sdata.glm$df.residual, lower.tail = FALSE)
+```
+
+
+
+```{r}
+step(Sdata.glm, test="LRT")
+```
+```{r}
+Sdata.glm.new = glm(VomitTotalCount ~ PONVChild + BMIPerc + SnakeConsumed1hr + Weight + Height, data = Sdata, family = poisson(link = log))
+summary(Sdata.glm.new)
+```
+
+```{r}
+pchisq(deviance(Sdata.glm.new) - deviance(Sdata.glm),2, lower.tail = FALSE)
+lrtest(Sdata.glm.new,Sdata.glm)
+```
+
+```{r}
+Sdata.glma = glm(VomitTotalCount~ Age + Sex + Weight + Height + BMI + BMIPerc + PONVChild*MotionSicknessChild + PONVFamily+Oxycodone +Smoker + MotionSicknessF + Morphine + SnakeConsumed1hr, data=Sdata, family ="poisson"(link=log))
+step(Sdata.glma, test="LRT")
+```
+
+```{r}
+Sdata.glma = glm(VomitTotalCount~ Age + Sex + Weight + Height + BMI + BMIPerc + PONVChild+MotionSicknessChild + PONVFamily*MotionSicknessF+Oxycodone +Smoker + Morphine + SnakeConsumed1hr, data=Sdata, family ="poisson"(link=log))
+step(Sdata.glma, test="LRT")
+```
+```{r}
+Sdata.glma = glm(VomitTotalCount~ Age + Sex + Weight + Height + BMI + BMIPerc + PONVChild+MotionSicknessChild + PONVFamily+MotionSicknessF*Oxycodone +Smoker + Morphine + SnakeConsumed1hr, data=Sdata, family ="poisson"(link=log))
+step(Sdata.glma, test="LRT")
+```
+
+```{r}
+Sdata.glmb = glm(VomitTotalCount~ Weight + Height + BMIPerc + PONVChild+MotionSicknessF*Oxycodone +Smoker+ SnakeConsumed1hr, data=Sdata, family ="poisson"(link=log))
+summary(Sdata.glmb)
+summary(Sdata.glm.new)
+```
+```{r}
+pchisq(deviance(Sdata.glm.new), df=df.residual(Sdata.glm.new), lower.tail = FALSE)
+pchisq(deviance(Sdata.glmb), df=df.residual(Sdata.glmb), lower.tail = FALSE)
+```
+The null hypothesis is that our model is correctly specified, and we have strong evidence to reject that hypothesis. So we have strong evidence that our model fits badly.
+
+```{r}
+vars.se = sqrt(diag(vcov(Sdata.glm.new)))*1.96
+vars.ci.LL = coef(Sdata.glm.new) - vars.se
+vars.ci.UL = coef(Sdata.glm.new) + vars.se
+cbind(vars.ci.LL,vars.ci.UL)
+```
+
+```{r}
+plot(fitted(Sdata.glm.new), residuals(Sdata.glm.new,"pearson"))
+```
+
+
